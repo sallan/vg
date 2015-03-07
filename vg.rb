@@ -87,6 +87,8 @@ class Account
   end
 
   def display_funds
+    puts "Holdings"
+    puts "=" * 60
     funds.each {|f| puts f}
   end
 
@@ -178,7 +180,6 @@ fund_db = FundDB.new("investment-types.dat")
 v = VanguardAccount.new("Vanguard - All Accounts")
 # v.load_funds("non-ira.csv")
 v.load_funds("vg-all.csv")
-#v.display_funds
-# puts v
-
 v.display_allocations(fund_db)
+puts ""
+v.display_funds
