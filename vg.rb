@@ -89,6 +89,51 @@ class Account
   def display_funds
     funds.each {|f| puts f}
   end
+
+  def allocations(funds_db)
+    allocations = Hash.new(0)
+
+    funds.each do |fund|
+      fund_type = funds_db.type(fund.symbol)
+      allocations[fund_type] += fund.value
+    end
+    allocations
+  end
+
+  def display_allocations(funds_db)
+    asset_classes = Hash.new(0)
+    stocks = ["DS", "IS"]
+    bonds = ["DB", "IS"]
+    
+    allocations = self.allocations(funds_db)
+    total = total_value
+    total_percent = 0
+    printf("%6s : %10s %8s\n", "Type", "Value", "Perc")
+    puts '=' * 30
+    allocations.each do |type, value|
+      percent = 100 * (value / total)
+      total_percent += percent
+      printf("%6s : %10.2f %8.2f\n", type, value, percent)
+
+      # Combine stocks and bonds
+      if stocks.include?(type)
+        asset_classes['Stocks'] += percent
+      elsif bonds.include?(type)
+        asset_classes['Bonds'] += percent
+      else
+        asset_classes['Other'] += percent
+      end
+    end
+
+    puts '=' * 30
+    printf("%6s : %10.2f %8.2f\n\n", ' ', total, total_percent)
+
+    puts "Summary"
+    puts '=' * 30
+    asset_classes.each do |type, percent|
+      printf("%6s : %8.2f\n", type, percent)
+    end
+  end
 end
 
 class VanguardAccount < Account
@@ -102,8 +147,20 @@ class VanguardAccount < Account
 
   def load_funds(file)
     CSV.foreach(file, :headers => true, :skip_blanks => true) do |row|
-      # There are 2 sets of  data in the downloaded file. Stop when we 
-      # get to the second header line
+      # The data we want starts with this header line:
+      #
+      # Account Number,Investment Name,Symbol,Shares,Share Price,Total Value,
+      #
+      # and ends when we get to the next header line (or eof)
+
+      # Decide it was just easer for now to hand edit the downloaded file.
+      # I know, lame.
+      # if row.start_with('Account Number,Investment Name,Symbol,Shares')
+      #   data_found = true
+      #   next
+      # end
+
+      # when we no longer see an account number, we're done
       break if row[$ACCT_NUMBER] !~ /^\d/
       funds << Fund.new(row[$FUND_NAME], row[$SYMBOL], row[$SHARES], row[$PRICE])
     end
@@ -116,14 +173,12 @@ def get_all_vg_funds
   all_vg_funds_url = 'https://investor.vanguard.com/mutual-funds/all-vanguard-funds#tab=general'
 end
 
-# def print_fund(r)
-#   puts "#{r[$SYMBOL]}  #{format("%10.2f", r[$TOTAL])}  #{r[$FUND_NAME]}"
-# end
-
 
 fund_db = FundDB.new("investment-types.dat")
-puts fund_db
+v = VanguardAccount.new("Vanguard - All Accounts")
+# v.load_funds("non-ira.csv")
+v.load_funds("vg-all.csv")
+#v.display_funds
+# puts v
 
-v = VanguardAccount.new("Vanguard Non-Retirement")
-v.load_funds("non-ira.csv")
-v.display_funds
+v.display_allocations(fund_db)
