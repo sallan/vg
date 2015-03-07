@@ -122,6 +122,8 @@ end
 
 
 fund_db = FundDB.new("investment-types.dat")
-v = VanguardAccount.new("Vanguard Non-Retirement", fund_db)
+puts fund_db
+
+v = VanguardAccount.new("Vanguard Non-Retirement")
 v.load_funds("non-ira.csv")
 v.display_funds
